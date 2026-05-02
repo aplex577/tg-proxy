@@ -1,0 +1,1329 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Telegram Proxy</title>
+  <meta name="description" content="Откройте Telegram без ручной настройки: нажмите кнопку, подтвердите подключение и оставайтесь на связи.">
+  <meta name="theme-color" content="#08111f">
+  <meta property="og:title" content="Telegram Proxy">
+  <meta property="og:description" content="Быстрый доступ к Telegram: подключение в один тап, помощь в боте и VPN для всех приложений.">
+  <meta property="og:type" content="website">
+  <style>
+    :root {
+      --bg: #08111f;
+      --bg-2: #0f1d33;
+      --panel: rgba(10, 19, 35, 0.72);
+      --panel-strong: rgba(16, 28, 49, 0.88);
+      --line: rgba(159, 191, 255, 0.16);
+      --line-strong: rgba(159, 191, 255, 0.28);
+      --text: #eef4ff;
+      --muted: #9eb4d7;
+      --brand: #53b6ff;
+      --brand-2: #6ef2d4;
+      --accent: #8f7cff;
+      --success: #4df58a;
+      --shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+      --radius-xl: 32px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 18%, rgba(83, 182, 255, 0.2), transparent 24%),
+        radial-gradient(circle at 85% 12%, rgba(143, 124, 255, 0.2), transparent 20%),
+        radial-gradient(circle at 75% 75%, rgba(110, 242, 212, 0.14), transparent 22%),
+        linear-gradient(160deg, #07101d 0%, #0b1526 38%, #0f1b30 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      width: 42vw;
+      height: 42vw;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.22;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::before {
+      top: -10vw;
+      left: -12vw;
+      background: rgba(83, 182, 255, 0.28);
+      animation: driftA 18s ease-in-out infinite;
+    }
+
+    body::after {
+      right: -14vw;
+      bottom: -16vw;
+      background: rgba(143, 124, 255, 0.26);
+      animation: driftB 22s ease-in-out infinite;
+    }
+
+    @keyframes driftA {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(5vw, 4vw, 0) scale(1.08); }
+    }
+
+    @keyframes driftB {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(-5vw, -3vw, 0) scale(1.06); }
+    }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.06;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
+      background-size: 26px 26px;
+      mask-image: radial-gradient(circle at center, black 30%, transparent 85%);
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 56px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 40px;
+      background:
+        linear-gradient(180deg, rgba(14, 27, 49, 0.82), rgba(7, 14, 26, 0.92)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(24px);
+      padding: 28px;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(120deg, rgba(83, 182, 255, 0.12), transparent 28%, transparent 60%, rgba(110, 242, 212, 0.12)),
+        radial-gradient(circle at top right, rgba(143, 124, 255, 0.18), transparent 24%);
+      pointer-events: none;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, rgba(83, 182, 255, 0.2), rgba(110, 242, 212, 0.24));
+      border: 1px solid rgba(159, 191, 255, 0.24);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .brand-mark::before {
+      content: "";
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 0 18px rgba(83, 182, 255, 0.65);
+    }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 999px;
+      padding: 10px 14px;
+      border: 1px solid rgba(77, 245, 138, 0.18);
+      color: #cfffe0;
+      background: rgba(77, 245, 138, 0.08);
+      font-size: 14px;
+    }
+
+    .live-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 8px rgba(77, 245, 138, 0.12);
+      animation: pulse 1.9s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(0.94); opacity: 0.85; }
+      50% { transform: scale(1.08); opacity: 1; }
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .eyebrow {
+      margin: 22px 0 10px;
+      color: var(--brand-2);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 8ch;
+      font-size: clamp(44px, 7vw, 88px);
+      line-height: 0.9;
+      letter-spacing: -0.05em;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff 10%, #9fd1ff 55%, #7cf0d8 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .lead {
+      margin: 18px 0 0;
+      max-width: 60ch;
+      font-size: 18px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .button,
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 16px 22px;
+      font: inherit;
+      font-weight: 700;
+      font-size: 15px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .button:hover,
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .button:focus-visible,
+    button:focus-visible,
+    .promo-link:focus-visible,
+    .detail-value:focus-visible {
+      outline: 3px solid rgba(110, 242, 212, 0.78);
+      outline-offset: 4px;
+    }
+
+    .primary {
+      color: #06101c;
+      background: linear-gradient(135deg, var(--brand-2), var(--brand));
+      box-shadow: 0 16px 28px rgba(83, 182, 255, 0.24);
+    }
+
+    .secondary {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .inline-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hero-status {
+      margin-top: 14px;
+      min-height: 22px;
+      color: #8fffd7;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .fallback-link {
+      display: none;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .fallback-link.is-visible {
+      display: block;
+    }
+
+    .fallback-link strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .config-warning {
+      display: none;
+      margin-top: 14px;
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 209, 102, 0.28);
+      border-radius: 18px;
+      background: rgba(255, 209, 102, 0.08);
+      color: #ffe7a6;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .config-warning.is-visible {
+      display: block;
+    }
+
+    .link-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .promo-link {
+      position: relative;
+      overflow: hidden;
+      display: block;
+      padding: 18px 18px 18px 20px;
+      border-radius: 22px;
+      text-decoration: none;
+      color: var(--text);
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .promo-link::before {
+      content: "";
+      position: absolute;
+      inset: auto -34px -34px auto;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .promo-link:hover {
+      transform: translateY(-2px);
+      border-color: var(--line-strong);
+      box-shadow: 0 18px 30px rgba(0, 0, 0, 0.18);
+    }
+
+    .promo-link.vpn::before {
+      background: radial-gradient(circle, rgba(83, 182, 255, 0.3), transparent 70%);
+    }
+
+    .promo-link.bot::before {
+      background: radial-gradient(circle, rgba(143, 124, 255, 0.32), transparent 70%);
+    }
+
+    .promo-link small {
+      display: inline-block;
+      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--brand-2);
+    }
+
+    .promo-link strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .promo-link span {
+      display: block;
+      max-width: 34ch;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .showcase {
+      position: relative;
+      border-radius: 30px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(13, 24, 43, 0.9), rgba(7, 14, 26, 0.96));
+      padding: 20px;
+      min-height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .showcase-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .window-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.16);
+    }
+
+    .window-dots span:nth-child(1) { background: #ff6b6b; }
+    .window-dots span:nth-child(2) { background: #ffd166; }
+    .window-dots span:nth-child(3) { background: #4df58a; }
+
+    .showcase-header small {
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+
+    .glass-stack {
+      position: relative;
+      margin-top: 20px;
+      min-height: 340px;
+    }
+
+    .floating-card {
+      position: absolute;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background: rgba(13, 23, 40, 0.72);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 24px 40px rgba(0, 0, 0, 0.24);
+      overflow: hidden;
+    }
+
+    .floating-card.large {
+      inset: 40px 14px 0 14px;
+      padding: 18px;
+      animation: floatA 9s ease-in-out infinite;
+    }
+
+    .floating-card.small {
+      width: 180px;
+      right: 0;
+      top: 0;
+      padding: 14px;
+      animation: floatB 8s ease-in-out infinite;
+    }
+
+    .floating-card.bottom {
+      width: 200px;
+      left: 0;
+      bottom: 0;
+      padding: 14px;
+      animation: floatC 10s ease-in-out infinite;
+    }
+
+    @keyframes floatA {
+      0%, 100% { transform: translateY(0) rotate(-2deg); }
+      50% { transform: translateY(-10px) rotate(-1deg); }
+    }
+
+    @keyframes floatB {
+      0%, 100% { transform: translateY(0) rotate(5deg); }
+      50% { transform: translateY(-8px) rotate(3deg); }
+    }
+
+    @keyframes floatC {
+      0%, 100% { transform: translateY(0) rotate(-4deg); }
+      50% { transform: translateY(10px) rotate(-2deg); }
+    }
+
+    .proxy-preview {
+      display: grid;
+      gap: 12px;
+    }
+
+    .preview-bar,
+    .preview-block {
+      border-radius: 18px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(159, 191, 255, 0.1);
+    }
+
+    .preview-bar {
+      height: 54px;
+    }
+
+    .preview-block {
+      padding: 14px;
+    }
+
+    .preview-block strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .preview-block span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .tiny-label {
+      display: inline-block;
+      margin-bottom: 8px;
+      color: var(--brand-2);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      font-weight: 800;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .metric {
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: rgba(12, 21, 38, 0.74);
+      padding: 18px;
+    }
+
+    .metric::before {
+      content: "";
+      position: absolute;
+      inset: auto -30px -30px auto;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(83, 182, 255, 0.12), transparent 70%);
+      pointer-events: none;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .details-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .details-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .detail-row {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border: 1px solid rgba(159, 191, 255, 0.12);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .detail-label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .detail-value {
+      min-width: 0;
+      color: var(--text);
+      font: 700 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+
+    .qr-card {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid rgba(159, 191, 255, 0.12);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .qr-card img {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 16px;
+      background: #ffffff;
+      padding: 10px;
+    }
+
+    .qr-card strong {
+      font-size: 16px;
+    }
+
+    .qr-card span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .panel {
+      position: relative;
+      overflow: hidden;
+      border-radius: 30px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(15, 27, 47, 0.82), rgba(8, 15, 28, 0.92));
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(83, 182, 255, 0.06), transparent 40%, rgba(143, 124, 255, 0.06));
+      pointer-events: none;
+    }
+
+    .panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel h2 {
+      margin: 0 0 14px;
+      font-size: 26px;
+      letter-spacing: -0.03em;
+    }
+
+    .panel p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .steps {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .step {
+      border-radius: 20px;
+      border: 1px solid rgba(159, 191, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 16px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .section-title p {
+      max-width: 54ch;
+      font-size: 15px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--brand-2);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .trust-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid rgba(159, 191, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 18px;
+      min-height: 190px;
+    }
+
+    .trust-card::before {
+      content: "";
+      position: absolute;
+      inset: auto -20px -20px auto;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(83, 182, 255, 0.14), transparent 70%);
+      pointer-events: none;
+    }
+
+    .trust-icon {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, rgba(83, 182, 255, 0.18), rgba(110, 242, 212, 0.16));
+      border: 1px solid rgba(159, 191, 255, 0.16);
+      font-size: 20px;
+    }
+
+    .trust-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .trust-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 30ch;
+    }
+
+    .premium-band {
+      position: relative;
+      overflow: hidden;
+      margin-top: 18px;
+      border-radius: 28px;
+      border: 1px solid var(--line-strong);
+      background:
+        linear-gradient(120deg, rgba(83, 182, 255, 0.12), rgba(143, 124, 255, 0.12) 55%, rgba(110, 242, 212, 0.12)),
+        rgba(255, 255, 255, 0.04);
+      padding: 22px;
+    }
+
+    .premium-band::after {
+      content: "";
+      position: absolute;
+      inset: auto -60px -60px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(143, 124, 255, 0.16), transparent 70%);
+      pointer-events: none;
+    }
+
+    .premium-band strong {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 24px;
+      letter-spacing: -0.03em;
+    }
+
+    .premium-band p {
+      max-width: 60ch;
+      font-size: 15px;
+    }
+
+    .final-cta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      margin-top: 20px;
+      border-color: rgba(110, 242, 212, 0.22);
+      background:
+        linear-gradient(120deg, rgba(110, 242, 212, 0.1), rgba(83, 182, 255, 0.08) 48%, rgba(143, 124, 255, 0.1)),
+        rgba(255, 255, 255, 0.04);
+    }
+
+    .final-cta h2 {
+      margin-bottom: 8px;
+    }
+
+    .final-cta .cta-row {
+      justify-content: flex-end;
+      margin-top: 0;
+    }
+
+    .mini-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+
+    .step span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .footer {
+      margin-top: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 960px) {
+      .hero-grid,
+      .content,
+      .metrics,
+      .link-grid,
+      .trust-grid,
+      .details-layout,
+      .final-cta {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        max-width: none;
+      }
+
+      .glass-stack {
+        min-height: 280px;
+      }
+
+      .section-title {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .final-cta .cta-row {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        width: min(100% - 20px, 100%);
+        padding-top: 12px;
+      }
+
+      .hero,
+      .panel {
+        border-radius: 24px;
+      }
+
+      .hero {
+        padding: 18px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .button,
+      button {
+        width: 100%;
+        text-align: center;
+      }
+
+      .detail-row {
+        grid-template-columns: 1fr;
+      }
+
+      .floating-card.small,
+      .floating-card.bottom {
+        width: 150px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      h1 {
+        font-size: 42px;
+        line-height: 0.96;
+      }
+
+      .showcase {
+        display: block;
+        padding: 16px;
+      }
+
+      .glass-stack {
+        display: grid;
+        gap: 12px;
+        min-height: 0;
+      }
+
+      .floating-card,
+      .floating-card.large,
+      .floating-card.small,
+      .floating-card.bottom {
+        position: relative;
+        inset: auto;
+        width: 100%;
+        padding: 14px;
+        transform: none;
+        animation: none;
+      }
+
+      .preview-bar {
+        height: 42px;
+      }
+
+      .trust-card {
+        min-height: 0;
+      }
+
+      .premium-band {
+        padding: 18px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        scroll-behavior: auto !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+
+  <div class="shell">
+    <section class="hero">
+      <div class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>Telegram Proxy</span>
+        </div>
+        <div class="live-pill">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span>Онлайн и готов к подключению</span>
+        </div>
+      </div>
+
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">Быстрый доступ</p>
+          <h1><span class="gradient-text">Telegram работает</span> без лишних настроек</h1>
+          <p class="lead">
+            Нажмите кнопку, подтвердите подключение в Telegram и продолжайте переписку,
+            каналы и звонки без ручного ввода параметров.
+          </p>
+
+          <div class="cta-row">
+            <a class="button primary" id="openLink" href="#">Подключить Telegram</a>
+            <button class="secondary" id="copyLink" type="button" aria-label="Скопировать ссылку для подключения к Telegram Proxy">Скопировать ссылку</button>
+            <button class="secondary" id="shareLink" type="button">Отправить ссылку</button>
+          </div>
+
+          <p class="inline-note">
+            Откройте страницу на телефоне с установленным Telegram: так подключение пройдет быстрее всего.
+          </p>
+          <div class="hero-status" id="status" aria-live="polite"></div>
+          <div class="config-warning" id="configWarning" role="status">
+            Сейчас показан демо-доступ. Для реального подключения используйте актуальную ссылку от сервиса.
+          </div>
+          <div class="fallback-link" id="fallbackLink" aria-live="polite">
+            <strong>Ссылка для подключения</strong>
+            <span id="fallbackUrl"></span>
+          </div>
+
+          <div class="link-grid">
+            <a class="promo-link vpn" id="vpnLink" href="#" target="_blank" rel="noopener noreferrer">
+              <small>VPN</small>
+              <strong>Защитить весь интернет</strong>
+              <span>Подключите VPN, чтобы сайты, приложения и мессенджеры работали стабильнее каждый день.</span>
+            </a>
+            <a class="promo-link bot" id="botLink" href="#" target="_blank" rel="noopener noreferrer">
+              <small>Помощь</small>
+              <strong>Получить поддержку в Telegram</strong>
+              <span>Откройте бота, если нужна инструкция, новый доступ или помощь с подключением.</span>
+            </a>
+          </div>
+
+          <div class="metrics">
+            <div class="metric">
+              <strong>Без сложной настройки</strong>
+              <span>Все параметры уже внутри ссылки: вам остается только подтвердить подключение.</span>
+            </div>
+            <div class="metric">
+              <strong>Легко отправить близким</strong>
+              <span>Скопируйте или отправьте ссылку тем, кому тоже нужен быстрый доступ к Telegram.</span>
+            </div>
+            <div class="metric">
+              <strong>Помощь рядом</strong>
+              <span>Если что-то не открылось, бот подскажет следующий шаг и поможет восстановить доступ.</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="showcase">
+          <div class="showcase-header">
+            <div class="window-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <small>Подключение</small>
+          </div>
+
+          <div class="glass-stack">
+            <div class="floating-card small">
+              <span class="tiny-label">Готово</span>
+              <div class="preview-block">
+                <strong>Доступ включен</strong>
+                <span>Telegram получает готовые параметры и открывает подтверждение подключения.</span>
+              </div>
+            </div>
+
+            <div class="floating-card large">
+              <div class="proxy-preview">
+                <div class="preview-bar"></div>
+                <div class="preview-block">
+                  <span class="tiny-label">Один шаг</span>
+                  <strong>Нажмите и подтвердите</strong>
+                  <span>Не нужно искать технические данные: все уже подготовлено в ссылке.</span>
+                </div>
+                <div class="preview-block">
+                  <span class="tiny-label">Для друзей</span>
+                  <strong>Ссылкой можно поделиться</strong>
+                  <span>Отправьте доступ в чат, если Telegram нужен еще кому-то.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="floating-card bottom">
+              <span class="tiny-label">Сразу</span>
+              <div class="preview-block">
+                <strong>Telegram снова под рукой</strong>
+                <span>Откройте ссылку и возвращайтесь к перепискам.</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="content">
+      <section class="panel">
+        <div class="section-title">
+          <div>
+            <h2>Если открываете с компьютера</h2>
+            <p>
+              Отсканируйте QR-код телефоном или откройте ссылку вручную. Это удобно,
+              когда Telegram установлен на другом устройстве.
+            </p>
+          </div>
+          <div class="badge">QR-доступ</div>
+        </div>
+
+        <div class="details-layout">
+          <div class="details-grid">
+            <div class="detail-row">
+              <span class="detail-label">Адрес</span>
+              <span class="detail-value" id="serverValue"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Порт</span>
+              <span class="detail-value" id="portValue"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Ключ</span>
+              <span class="detail-value" id="secretValue"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Ссылка</span>
+              <a class="detail-value" id="detailTelegramLink" href="#">Открыть подключение</a>
+            </div>
+          </div>
+
+          <div class="qr-card">
+            <img id="qrImage" alt="QR-код для подключения Telegram Proxy">
+            <strong>Открыть с телефона</strong>
+            <span>Наведите камеру на код и подтвердите подключение в Telegram.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">
+          <div>
+            <h2>Что вы получаете</h2>
+            <p>
+              Быстрый вход в Telegram, понятные действия и запасные варианты,
+              если нужно подключить VPN или получить помощь.
+            </p>
+          </div>
+          <div class="badge">Без лишних шагов</div>
+        </div>
+
+        <div class="trust-grid">
+          <div class="trust-card">
+            <div class="trust-icon" aria-hidden="true">A</div>
+            <strong>Подключение за минуту</strong>
+            <span>Откройте ссылку, подтвердите действие в Telegram и сразу возвращайтесь к общению.</span>
+          </div>
+          <div class="trust-card">
+            <div class="trust-icon" aria-hidden="true">S</div>
+            <strong>Без технической путаницы</strong>
+            <span>Не нужно разбираться в настройках: страница сама ведет к нужному действию.</span>
+          </div>
+          <div class="trust-card">
+            <div class="trust-icon" aria-hidden="true">24</div>
+            <strong>Есть запасной путь</strong>
+            <span>Если одного прокси мало, можно подключить VPN или написать в бот поддержки.</span>
+          </div>
+        </div>
+
+        <div class="premium-band">
+          <strong>Больше стабильности для Telegram и других приложений</strong>
+          <p>
+            Начните с быстрого подключения Telegram. Если нужен полный доступ для браузера,
+            YouTube, Instagram и других сервисов, подключите VPN.
+          </p>
+          <div class="mini-cta-row">
+            <a class="button primary" id="bandVpnLink" href="#" target="_blank" rel="noopener noreferrer">Подключить VPN</a>
+            <a class="button secondary" id="bandBotLink" href="#" target="_blank" rel="noopener noreferrer">Написать в поддержку</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel final-cta">
+        <div>
+          <h2>Telegram можно открыть прямо сейчас</h2>
+          <p>Нажмите кнопку, подтвердите подключение и продолжайте пользоваться мессенджером.</p>
+          <div class="hero-status" id="finalStatus" aria-live="polite"></div>
+        </div>
+        <div class="cta-row">
+          <a class="button primary" id="finalOpenLink" href="#">Открыть Telegram</a>
+          <button class="secondary" id="finalCopyLink" type="button" aria-label="Скопировать ссылку для подключения к Telegram Proxy">Скопировать</button>
+          <button class="secondary" id="finalShareLink" type="button">Отправить</button>
+        </div>
+      </section>
+    </section>
+
+    <p class="footer">Откройте Telegram без ручной настройки и лишних шагов.</p>
+  </div>
+
+  <script>
+    // Замените значения ниже на реальные данные перед публикацией страницы.
+    const proxyConfig = {
+      server: "proxy.example.com",
+      port: "443",
+      secret: "00000000000000000000000000000000",
+      vpnUrl: "https://example.com/vpn",
+      botUrl: "https://t.me/example_bot"
+    };
+
+    const params = new URLSearchParams({
+      server: proxyConfig.server,
+      port: proxyConfig.port,
+      secret: proxyConfig.secret
+    });
+
+    const telegramUrl = `https://t.me/proxy?${params.toString()}`;
+    const fallbackLink = document.getElementById("fallbackLink");
+    const fallbackUrl = document.getElementById("fallbackUrl");
+    const configWarning = document.getElementById("configWarning");
+    const status = document.getElementById("status");
+    const finalStatus = document.getElementById("finalStatus");
+
+    fallbackUrl.textContent = telegramUrl;
+
+    document.getElementById("openLink").href = telegramUrl;
+    document.getElementById("detailTelegramLink").href = telegramUrl;
+    document.getElementById("finalOpenLink").href = telegramUrl;
+    document.getElementById("vpnLink").href = proxyConfig.vpnUrl;
+    document.getElementById("botLink").href = proxyConfig.botUrl;
+    document.getElementById("bandVpnLink").href = proxyConfig.vpnUrl;
+    document.getElementById("bandBotLink").href = proxyConfig.botUrl;
+    document.getElementById("serverValue").textContent = proxyConfig.server;
+    document.getElementById("portValue").textContent = proxyConfig.port;
+    document.getElementById("secretValue").textContent = proxyConfig.secret;
+    document.getElementById("qrImage").src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&data=${encodeURIComponent(telegramUrl)}`;
+
+    function showFallbackLink() {
+      fallbackLink.classList.add("is-visible");
+    }
+
+    function setStatus(message) {
+      status.textContent = message;
+      finalStatus.textContent = message;
+    }
+
+    function hasPlaceholderConfig() {
+      return proxyConfig.server === "proxy.example.com"
+        || proxyConfig.secret === "00000000000000000000000000000000"
+        || proxyConfig.vpnUrl.includes("example.com")
+        || proxyConfig.botUrl.includes("example_bot");
+    }
+
+    function copyWithSelectionFallback(text) {
+      const field = document.createElement("textarea");
+      field.value = text;
+      field.setAttribute("readonly", "");
+      field.style.position = "fixed";
+      field.style.top = "-9999px";
+      field.style.left = "-9999px";
+      document.body.appendChild(field);
+      field.select();
+
+      let copied = false;
+      try {
+        copied = document.execCommand("copy");
+      } finally {
+        field.remove();
+      }
+
+      return copied;
+    }
+
+    async function copyTelegramLink() {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(telegramUrl);
+        } else if (!copyWithSelectionFallback(telegramUrl)) {
+          throw new Error("Fallback copy failed");
+        }
+
+        setStatus("Ссылка скопирована.");
+        return true;
+      } catch (error) {
+        showFallbackLink();
+        setStatus("Автокопирование недоступно. Ссылка показана ниже, ее можно выделить и скопировать вручную.");
+        return false;
+      }
+    }
+
+    async function shareTelegramLink() {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "Telegram Proxy",
+            text: "Ссылка для подключения Telegram Proxy",
+            url: telegramUrl
+          });
+          setStatus("Ссылка отправлена.");
+          return;
+        } catch (error) {
+          if (error.name === "AbortError") {
+            return;
+          }
+        }
+      }
+
+      const copied = await copyTelegramLink();
+      if (copied) {
+        setStatus("Поделиться напрямую не получилось, ссылка скопирована.");
+      }
+    }
+
+    if (hasPlaceholderConfig()) {
+      configWarning.classList.add("is-visible");
+    }
+
+    document.getElementById("copyLink").addEventListener("click", copyTelegramLink);
+    document.getElementById("finalCopyLink").addEventListener("click", copyTelegramLink);
+    document.getElementById("shareLink").addEventListener("click", shareTelegramLink);
+    document.getElementById("finalShareLink").addEventListener("click", shareTelegramLink);
+  </script>
+</body>
+</html>
