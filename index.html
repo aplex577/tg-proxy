@@ -7,7 +7,7 @@
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%2308111f'/><path d='M74.5 26.3L20.2 47.1c-2.3.9-2.3 2.2-.4 2.8l13.9 4.3 32.2-20.3c1.5-.9 2.9-.4 1.8.6L41.6 58.3l-.9 14.4c1.4 0 2-.6 2.8-1.4l6.8-6.6 14.1 10.4c2.6 1.4 4.5.7 5.1-2.4l9.3-43.7c.9-3.8-1.5-5.5-3.9-4.5z' fill='%2353b6ff'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&amp;display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Telegram Proxy</title>
   <meta name="description"
@@ -1230,11 +1230,11 @@
           <div>
             <h2>Если открываете с компьютера</h2>
             <p>
-              Отсканируйте KR-код телефоном или откройте ссылку вручную. Это удобно,
-              когда Telegram установлен на другом устройстве.
+              Скопируйте ссылку на телефон или откройте подключение вручную. Это удобно,
+              когда Telegram установлен на другом устройстве, а параметры нельзя отправлять во внешний QR-сервис.
             </p>
           </div>
-          <div class="badge">QR-доступ</div>
+          <div class="badge">Ручной доступ</div>
         </div>
 
         <div class="details-layout">
@@ -1258,9 +1258,9 @@
           </div>
 
           <div class="qr-card">
-            <img id="qrImage" alt="QR-код для подключения Telegram Proxy">
+            <img id="qrImage" alt="QR-код для подключения Telegram Proxy" hidden>
             <strong>Открыть с телефона</strong>
-            <span>Наведите камеру на код и подтвердите подключение в Telegram.</span>
+            <span id="qrHint">После добавления реальных параметров откройте ссылку на телефоне и подтвердите подключение в Telegram.</span>
           </div>
         </div>
       </section>
@@ -1338,6 +1338,21 @@
       botUrl: "https://t.me/example_bot"
     };
 
+    function hasPlaceholderProxyConfig() {
+      return proxyConfig.server === "proxy.example.com"
+        || proxyConfig.secret === "00000000000000000000000000000000";
+    }
+
+    function hasPlaceholderConfig() {
+      return hasPlaceholderProxyConfig()
+        || proxyConfig.vpnUrl.includes("example.com")
+        || proxyConfig.botUrl.includes("example_bot");
+    }
+
+    const hasDemoVpnUrl = proxyConfig.vpnUrl.includes("example.com");
+    const hasDemoBotUrl = proxyConfig.botUrl.includes("example_bot");
+    const isDemoProxyConfig = hasPlaceholderProxyConfig();
+    const isDemoConfig = hasPlaceholderConfig();
     const params = new URLSearchParams({
       server: proxyConfig.server,
       port: proxyConfig.port,
@@ -1351,25 +1366,43 @@
     const status = document.getElementById("status");
     const finalStatus = document.getElementById("finalStatus");
 
-    fallbackUrl.textContent = telegramUrl;
+    fallbackUrl.textContent = isDemoProxyConfig
+      ? "Добавьте реальные server, port и secret в proxyConfig."
+      : telegramUrl;
 
-    document.getElementById("openLink").href = telegramUrl;
-    document.getElementById("detailTelegramLink").href = telegramUrl;
-    document.getElementById("finalOpenLink").href = telegramUrl;
-    document.getElementById("vpnLink").href = proxyConfig.vpnUrl;
-    document.getElementById("botLink").href = proxyConfig.botUrl;
-    document.getElementById("bandVpnLink").href = proxyConfig.vpnUrl;
-    document.getElementById("bandBotLink").href = proxyConfig.botUrl;
+    document.getElementById("openLink").href = isDemoProxyConfig ? "#configWarning" : telegramUrl;
+    document.getElementById("detailTelegramLink").href = isDemoProxyConfig ? "#configWarning" : telegramUrl;
+    document.getElementById("finalOpenLink").href = isDemoProxyConfig ? "#configWarning" : telegramUrl;
+    document.getElementById("vpnLink").href = hasDemoVpnUrl ? "#configWarning" : proxyConfig.vpnUrl;
+    document.getElementById("botLink").href = hasDemoBotUrl ? "#configWarning" : proxyConfig.botUrl;
+    document.getElementById("bandVpnLink").href = hasDemoVpnUrl ? "#configWarning" : proxyConfig.vpnUrl;
+    document.getElementById("bandBotLink").href = hasDemoBotUrl ? "#configWarning" : proxyConfig.botUrl;
     document.getElementById("serverValue").textContent = proxyConfig.server;
     document.getElementById("portValue").textContent = proxyConfig.port;
     document.getElementById("secretValue").textContent = proxyConfig.secret;
     const qrImage = document.getElementById("qrImage");
-    qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&data=${encodeURIComponent(telegramUrl)}`;
-    qrImage.onerror = function () {
-      this.style.display = "none";
-      this.parentElement.insertAdjacentHTML("afterbegin",
-        '<div style="padding:20px;text-align:center;color:var(--muted);font-size:14px;border:1px dashed var(--line);border-radius:16px;">QR-код не загрузился.<br>Используйте ссылку выше.</div>');
-    };
+    const qrHint = document.getElementById("qrHint");
+
+    function showQrPlaceholder(message) {
+      const placeholder = document.createElement("div");
+      placeholder.textContent = message;
+      placeholder.style.padding = "20px";
+      placeholder.style.textAlign = "center";
+      placeholder.style.color = "var(--muted)";
+      placeholder.style.fontSize = "14px";
+      placeholder.style.lineHeight = "1.45";
+      placeholder.style.border = "1px dashed var(--line)";
+      placeholder.style.borderRadius = "16px";
+      qrImage.replaceWith(placeholder);
+    }
+
+    showQrPlaceholder(isDemoProxyConfig
+      ? "Добавьте реальные параметры подключения, затем откройте ссылку на телефоне."
+      : "QR-код отключен: ссылка содержит secret и не отправляется во внешний сервис.");
+
+    if (!isDemoProxyConfig) {
+      qrHint.textContent = "Откройте ссылку выше на телефоне или скопируйте ее кнопкой на странице.";
+    }
 
     function showFallbackLink() {
       fallbackLink.classList.add("is-visible");
@@ -1378,13 +1411,6 @@
     function setStatus(message) {
       status.textContent = message;
       finalStatus.textContent = message;
-    }
-
-    function hasPlaceholderConfig() {
-      return proxyConfig.server === "proxy.example.com"
-        || proxyConfig.secret === "00000000000000000000000000000000"
-        || proxyConfig.vpnUrl.includes("example.com")
-        || proxyConfig.botUrl.includes("example_bot");
     }
 
     function copyWithSelectionFallback(text) {
@@ -1408,7 +1434,13 @@
     }
 
     async function copyTelegramLink(e) {
-      const btn = e?.currentTarget;
+      const btn = e && e.currentTarget;
+      if (isDemoProxyConfig) {
+        showFallbackLink();
+        setStatus("Добавьте реальные параметры подключения перед публикацией страницы.");
+        return false;
+      }
+
       try {
         if (navigator.clipboard && window.isSecureContext) {
           await navigator.clipboard.writeText(telegramUrl);
@@ -1433,6 +1465,12 @@
     }
 
     async function shareTelegramLink() {
+      if (isDemoProxyConfig) {
+        showFallbackLink();
+        setStatus("Добавьте реальные параметры подключения перед публикацией страницы.");
+        return;
+      }
+
       if (navigator.share) {
         try {
           await navigator.share({
@@ -1455,10 +1493,24 @@
       }
     }
 
-    if (hasPlaceholderConfig()) {
+    function handleOpenTelegram(event) {
+      if (!isDemoProxyConfig) {
+        return;
+      }
+
+      event.preventDefault();
+      showFallbackLink();
+      setStatus("Демо-ссылка не открывается. Сначала замените proxyConfig на реальные данные.");
+      configWarning.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    if (isDemoConfig) {
       configWarning.classList.add("is-visible");
     }
 
+    document.getElementById("openLink").addEventListener("click", handleOpenTelegram);
+    document.getElementById("detailTelegramLink").addEventListener("click", handleOpenTelegram);
+    document.getElementById("finalOpenLink").addEventListener("click", handleOpenTelegram);
     document.getElementById("copyLink").addEventListener("click", copyTelegramLink);
     document.getElementById("finalCopyLink").addEventListener("click", copyTelegramLink);
     document.getElementById("shareLink").addEventListener("click", shareTelegramLink);
@@ -1471,18 +1523,23 @@
     }
 
     // Scroll-reveal анимация для секций
-    const revealObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-visible");
-        }
-      });
-    }, { threshold: 0.1 });
+    const revealElements = document.querySelectorAll(".panel, .metric, .trust-card, .premium-band");
+    if ("IntersectionObserver" in window) {
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+          }
+        });
+      }, { threshold: 0.1 });
 
-    document.querySelectorAll(".panel, .metric, .trust-card, .premium-band").forEach(el => {
-      el.classList.add("reveal");
-      revealObserver.observe(el);
-    });
+      revealElements.forEach(el => {
+        el.classList.add("reveal");
+        revealObserver.observe(el);
+      });
+    } else {
+      revealElements.forEach(el => el.classList.add("is-visible"));
+    }
 
     // Динамический год в футере
     const footer = document.getElementById("footerText");
